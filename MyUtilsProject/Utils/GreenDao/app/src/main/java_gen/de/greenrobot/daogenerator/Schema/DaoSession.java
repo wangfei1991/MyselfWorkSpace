@@ -8,7 +8,6 @@ import de.greenrobot.dao.AbstractDao;
 import de.greenrobot.dao.AbstractDaoSession;
 import de.greenrobot.dao.identityscope.IdentityScopeType;
 import de.greenrobot.dao.internal.DaoConfig;
-
 import de.greenrobot.daogenerator.Schema.Food;
 import de.greenrobot.daogenerator.Schema.FoodType;
 import de.greenrobot.daogenerator.Schema.Episode;
@@ -41,7 +40,6 @@ public class DaoSession extends AbstractDaoSession {
     public DaoSession(SQLiteDatabase db, IdentityScopeType type, Map<Class<? extends AbstractDao<?, ?>>, DaoConfig>
             daoConfigMap) {
         super(db);
-
         foodDaoConfig = daoConfigMap.get(FoodDao.class).clone();
         foodDaoConfig.initIdentityScope(type);
 
