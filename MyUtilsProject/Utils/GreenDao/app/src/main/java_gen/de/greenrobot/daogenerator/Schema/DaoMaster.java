@@ -59,14 +59,10 @@ public class DaoMaster extends AbstractDaoMaster {
 
     public DaoMaster(SQLiteDatabase db) {
         super(db, SCHEMA_VERSION);
-<<<<<<< HEAD
         registerDaoClass(FoodDao.class);
         registerDaoClass(FoodTypeDao.class);
         registerDaoClass(EpisodeDao.class);
         registerDaoClass(FoodsEpisodeDao.class);
-=======
-        registerDaoClass(NoteDao.class);
->>>>>>> 1c1a5441a8baaf32232d065eaad0bf3cc93dec99
     }
     
     public DaoSession newSession() {
