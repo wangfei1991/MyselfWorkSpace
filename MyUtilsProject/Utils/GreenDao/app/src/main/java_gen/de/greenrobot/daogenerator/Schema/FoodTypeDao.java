@@ -23,7 +23,7 @@ public class FoodTypeDao extends AbstractDao<FoodType, Long> {
      * Can be used for QueryBuilder and for referencing column names.
     */
     public static class Properties {
-        public final static Property Id = new Property(0, Long.class, "id", true, "_id");
+        public final static Property FoodTypeId = new Property(0, Long.class, "FoodTypeId", true, "FOOD_TYPE_ID");
         public final static Property Name = new Property(1, String.class, "name", false, "NAME");
     };
 
@@ -40,7 +40,7 @@ public class FoodTypeDao extends AbstractDao<FoodType, Long> {
     public static void createTable(SQLiteDatabase db, boolean ifNotExists) {
         String constraint = ifNotExists? "IF NOT EXISTS ": "";
         db.execSQL("CREATE TABLE " + constraint + "\"FOOD_TYPE\" (" + //
-                "\"_id\" INTEGER PRIMARY KEY ," + // 0: id
+                "\"FOOD_TYPE_ID\" INTEGER PRIMARY KEY AUTOINCREMENT ," + // 0: FoodTypeId
                 "\"NAME\" TEXT NOT NULL );"); // 1: name
     }
 
@@ -55,9 +55,9 @@ public class FoodTypeDao extends AbstractDao<FoodType, Long> {
     protected void bindValues(SQLiteStatement stmt, FoodType entity) {
         stmt.clearBindings();
  
-        Long id = entity.getId();
-        if (id != null) {
-            stmt.bindLong(1, id);
+        Long FoodTypeId = entity.getFoodTypeId();
+        if (FoodTypeId != null) {
+            stmt.bindLong(1, FoodTypeId);
         }
         stmt.bindString(2, entity.getName());
     }
@@ -72,7 +72,7 @@ public class FoodTypeDao extends AbstractDao<FoodType, Long> {
     @Override
     public FoodType readEntity(Cursor cursor, int offset) {
         FoodType entity = new FoodType( //
-            cursor.isNull(offset + 0) ? null : cursor.getLong(offset + 0), // id
+            cursor.isNull(offset + 0) ? null : cursor.getLong(offset + 0), // FoodTypeId
             cursor.getString(offset + 1) // name
         );
         return entity;
@@ -81,14 +81,14 @@ public class FoodTypeDao extends AbstractDao<FoodType, Long> {
     /** @inheritdoc */
     @Override
     public void readEntity(Cursor cursor, FoodType entity, int offset) {
-        entity.setId(cursor.isNull(offset + 0) ? null : cursor.getLong(offset + 0));
+        entity.setFoodTypeId(cursor.isNull(offset + 0) ? null : cursor.getLong(offset + 0));
         entity.setName(cursor.getString(offset + 1));
      }
     
     /** @inheritdoc */
     @Override
     protected Long updateKeyAfterInsert(FoodType entity, long rowId) {
-        entity.setId(rowId);
+        entity.setFoodTypeId(rowId);
         return rowId;
     }
     
@@ -96,7 +96,7 @@ public class FoodTypeDao extends AbstractDao<FoodType, Long> {
     @Override
     public Long getKey(FoodType entity) {
         if(entity != null) {
-            return entity.getId();
+            return entity.getFoodTypeId();
         } else {
             return null;
         }

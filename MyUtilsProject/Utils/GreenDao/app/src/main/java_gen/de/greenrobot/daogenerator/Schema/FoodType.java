@@ -6,28 +6,28 @@ package de.greenrobot.daogenerator.Schema;
  */
 public class FoodType {
 
-    private Long id;
+    private Long FoodTypeId;
     /** Not-null value. */
     private String name;
 
     public FoodType() {
     }
 
-    public FoodType(Long id) {
-        this.id = id;
+    public FoodType(Long FoodTypeId) {
+        this.FoodTypeId = FoodTypeId;
     }
 
-    public FoodType(Long id, String name) {
-        this.id = id;
+    public FoodType(Long FoodTypeId, String name) {
+        this.FoodTypeId = FoodTypeId;
         this.name = name;
     }
 
-    public Long getId() {
-        return id;
+    public Long getFoodTypeId() {
+        return FoodTypeId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setFoodTypeId(Long FoodTypeId) {
+        this.FoodTypeId = FoodTypeId;
     }
 
     /** Not-null value. */

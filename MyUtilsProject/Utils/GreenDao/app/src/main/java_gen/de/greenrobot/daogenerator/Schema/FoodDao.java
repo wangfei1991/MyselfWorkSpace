@@ -1,11 +1,14 @@
 package de.greenrobot.daogenerator.Schema;
 
+import java.util.List;
+import java.util.ArrayList;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 
 import de.greenrobot.dao.AbstractDao;
 import de.greenrobot.dao.Property;
+import de.greenrobot.dao.internal.SqlUtils;
 import de.greenrobot.dao.internal.DaoConfig;
 
 import de.greenrobot.daogenerator.Schema.Food;
@@ -24,9 +27,11 @@ public class FoodDao extends AbstractDao<Food, Long> {
     */
     public static class Properties {
         public final static Property Id = new Property(0, Long.class, "id", true, "_id");
-        public final static Property TypeId = new Property(1, Integer.class, "typeId", false, "TYPE_ID");
-        public final static Property Name = new Property(2, String.class, "name", false, "NAME");
+        public final static Property Name = new Property(1, String.class, "name", false, "NAME");
+        public final static Property FoodTypeId = new Property(2, Long.class, "FoodTypeId", false, "FOOD_TYPE_ID");
     };
+
+    private DaoSession daoSession;
 
 
     public FoodDao(DaoConfig config) {
@@ -35,15 +40,16 @@ public class FoodDao extends AbstractDao<Food, Long> {
     
     public FoodDao(DaoConfig config, DaoSession daoSession) {
         super(config, daoSession);
+        this.daoSession = daoSession;
     }
 
     /** Creates the underlying database table. */
     public static void createTable(SQLiteDatabase db, boolean ifNotExists) {
         String constraint = ifNotExists? "IF NOT EXISTS ": "";
         db.execSQL("CREATE TABLE " + constraint + "\"FOOD\" (" + //
-                "\"_id\" INTEGER PRIMARY KEY ," + // 0: id
-                "\"TYPE_ID\" INTEGER," + // 1: typeId
-                "\"NAME\" TEXT NOT NULL );"); // 2: name
+                "\"_id\" INTEGER PRIMARY KEY AUTOINCREMENT ," + // 0: id
+                "\"NAME\" TEXT NOT NULL ," + // 1: name
+                "\"FOOD_TYPE_ID\" INTEGER);"); // 2: FoodTypeId
     }
 
     /** Drops the underlying database table. */
@@ -61,12 +67,18 @@ public class FoodDao extends AbstractDao<Food, Long> {
         if (id != null) {
             stmt.bindLong(1, id);
         }
+        stmt.bindString(2, entity.getName());
  
-        Integer typeId = entity.getTypeId();
-        if (typeId != null) {
-            stmt.bindLong(2, typeId);
+        Long FoodTypeId = entity.getFoodTypeId();
+        if (FoodTypeId != null) {
+            stmt.bindLong(3, FoodTypeId);
         }
-        stmt.bindString(3, entity.getName());
+    }
+
+    @Override
+    protected void attachEntity(Food entity) {
+        super.attachEntity(entity);
+        entity.__setDaoSession(daoSession);
     }
 
     /** @inheritdoc */
@@ -80,8 +92,8 @@ public class FoodDao extends AbstractDao<Food, Long> {
     public Food readEntity(Cursor cursor, int offset) {
         Food entity = new Food( //
             cursor.isNull(offset + 0) ? null : cursor.getLong(offset + 0), // id
-            cursor.isNull(offset + 1) ? null : cursor.getInt(offset + 1), // typeId
-            cursor.getString(offset + 2) // name
+            cursor.getString(offset + 1), // name
+            cursor.isNull(offset + 2) ? null : cursor.getLong(offset + 2) // FoodTypeId
         );
         return entity;
     }
@@ -90,8 +102,8 @@ public class FoodDao extends AbstractDao<Food, Long> {
     @Override
     public void readEntity(Cursor cursor, Food entity, int offset) {
         entity.setId(cursor.isNull(offset + 0) ? null : cursor.getLong(offset + 0));
-        entity.setTypeId(cursor.isNull(offset + 1) ? null : cursor.getInt(offset + 1));
-        entity.setName(cursor.getString(offset + 2));
+        entity.setName(cursor.getString(offset + 1));
+        entity.setFoodTypeId(cursor.isNull(offset + 2) ? null : cursor.getLong(offset + 2));
      }
     
     /** @inheritdoc */
@@ -117,4 +129,95 @@ public class FoodDao extends AbstractDao<Food, Long> {
         return true;
     }
     
+    private String selectDeep;
+
+    protected String getSelectDeep() {
+        if (selectDeep == null) {
+            StringBuilder builder = new StringBuilder("SELECT ");
+            SqlUtils.appendColumns(builder, "T", getAllColumns());
+            builder.append(',');
+            SqlUtils.appendColumns(builder, "T0", daoSession.getFoodTypeDao().getAllColumns());
+            builder.append(" FROM FOOD T");
+            builder.append(" LEFT JOIN FOOD_TYPE T0 ON T.\"FOOD_TYPE_ID\"=T0.\"FOOD_TYPE_ID\"");
+            builder.append(' ');
+            selectDeep = builder.toString();
+        }
+        return selectDeep;
+    }
+    
+    protected Food loadCurrentDeep(Cursor cursor, boolean lock) {
+        Food entity = loadCurrent(cursor, 0, lock);
+        int offset = getAllColumns().length;
+
+        FoodType foodType = loadCurrentOther(daoSession.getFoodTypeDao(), cursor, offset);
+        entity.setFoodType(foodType);
+
+        return entity;    
+    }
+
+    public Food loadDeep(Long key) {
+        assertSinglePk();
+        if (key == null) {
+            return null;
+        }
+
+        StringBuilder builder = new StringBuilder(getSelectDeep());
+        builder.append("WHERE ");
+        SqlUtils.appendColumnsEqValue(builder, "T", getPkColumns());
+        String sql = builder.toString();
+        
+        String[] keyArray = new String[] { key.toString() };
+        Cursor cursor = db.rawQuery(sql, keyArray);
+        
+        try {
+            boolean available = cursor.moveToFirst();
+            if (!available) {
+                return null;
+            } else if (!cursor.isLast()) {
+                throw new IllegalStateException("Expected unique result, but count was " + cursor.getCount());
+            }
+            return loadCurrentDeep(cursor, true);
+        } finally {
+            cursor.close();
+        }
+    }
+    
+    /** Reads all available rows from the given cursor and returns a list of new ImageTO objects. */
+    public List<Food> loadAllDeepFromCursor(Cursor cursor) {
+        int count = cursor.getCount();
+        List<Food> list = new ArrayList<Food>(count);
+        
+        if (cursor.moveToFirst()) {
+            if (identityScope != null) {
+                identityScope.lock();
+                identityScope.reserveRoom(count);
+            }
+            try {
+                do {
+                    list.add(loadCurrentDeep(cursor, false));
+                } while (cursor.moveToNext());
+            } finally {
+                if (identityScope != null) {
+                    identityScope.unlock();
+                }
+            }
+        }
+        return list;
+    }
+    
+    protected List<Food> loadDeepAllAndCloseCursor(Cursor cursor) {
+        try {
+            return loadAllDeepFromCursor(cursor);
+        } finally {
+            cursor.close();
+        }
+    }
+    
+
+    /** A raw-style query where you can pass any WHERE clause and arguments. */
+    public List<Food> queryDeep(String where, String... selectionArg) {
+        Cursor cursor = db.rawQuery(getSelectDeep() + where, selectionArg);
+        return loadDeepAllAndCloseCursor(cursor);
+    }
+ 
 }

@@ -2,15 +2,41 @@ package com.example;
 
 import de.greenrobot.daogenerator.DaoGenerator;
 import de.greenrobot.daogenerator.Entity;
+import de.greenrobot.daogenerator.Property;
 import de.greenrobot.daogenerator.Schema;
 
 public class GreenDaoExampleGenerator {
     public static void main(String[] args) throws Exception {
         Schema schema = new Schema(1, "de.greenrobot.daogenerator.Schema");
-        addFood(schema);
-        addFoodType(schema);
-        addEpisode(schema);
-        addFoodsEpisode(schema);
+
+
+        Entity food = schema.addEntity("Food");
+        food.addIdProperty().primaryKey().autoincrement();
+        food.addStringProperty("name").notNull();
+
+        Entity foodType = schema.addEntity("FoodType");
+        foodType.addLongProperty("FoodTypeId").primaryKey().autoincrement();
+        foodType.addStringProperty("name").notNull();
+
+//        Entity episode = schema.addEntity("episode");
+//        episode.addIdProperty().primaryKey();
+//        episode.addStringProperty("name");
+//
+//        Entity foodsEpisodes = schema.addEntity("foodsEpisode");
+//        foodsEpisodes.addIdProperty().primaryKey();
+//        Property foodsEpisodesFoodIdProperty = foodsEpisodes.addIntProperty("foodId").getProperty();
+//        Property foodsEpisodesEpisodeIdProperty = foodsEpisodes.addIntProperty("episodeId").getProperty();
+
+        Property typeIdProperty = food.addLongProperty("FoodTypeId").getProperty();
+        food.addToOne(foodType, typeIdProperty);
+
+//        foodsEpisodes.addToMany(episode, foodsEpisodesEpisodeIdProperty);
+//        foodsEpisodes.addToMany(food, foodsEpisodesFoodIdProperty);
+
+//        addFood(schema);
+//        addFoodType(schema);
+//        addEpisode(schema);
+//        addFoodsEpisode(schema);
         new DaoGenerator().generateAll(schema, "../GreenDao/app/src/main/java_gen");
     }
 
