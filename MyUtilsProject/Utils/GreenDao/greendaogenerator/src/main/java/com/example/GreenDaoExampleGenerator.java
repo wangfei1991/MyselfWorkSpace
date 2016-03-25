@@ -7,7 +7,8 @@ import de.greenrobot.daogenerator.Schema;
 
 public class GreenDaoExampleGenerator {
     public static void main(String[] args) throws Exception {
-        Schema schema = new Schema(1, "de.greenrobot.daogenerator.Schema");
+        //指定包名
+        Schema schema = new Schema(1, "www.example.com.greendao.modle");
 
 
         Entity food = schema.addEntity("Food");
@@ -15,7 +16,7 @@ public class GreenDaoExampleGenerator {
         food.addStringProperty("name").notNull();
 
         Entity foodType = schema.addEntity("FoodType");
-        foodType.addLongProperty("FoodTypeId").primaryKey().autoincrement();
+        foodType.addIdProperty().primaryKey().autoincrement();
         foodType.addStringProperty("name").notNull();
 
 //        Entity episode = schema.addEntity("episode");
@@ -27,7 +28,7 @@ public class GreenDaoExampleGenerator {
 //        Property foodsEpisodesFoodIdProperty = foodsEpisodes.addIntProperty("foodId").getProperty();
 //        Property foodsEpisodesEpisodeIdProperty = foodsEpisodes.addIntProperty("episodeId").getProperty();
 
-        Property typeIdProperty = food.addLongProperty("FoodTypeId").getProperty();
+        Property typeIdProperty = food.addLongProperty("foodTypeId").getProperty();
         food.addToOne(foodType, typeIdProperty);
 
 //        foodsEpisodes.addToMany(episode, foodsEpisodesEpisodeIdProperty);
