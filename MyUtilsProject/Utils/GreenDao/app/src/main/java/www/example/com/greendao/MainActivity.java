@@ -25,17 +25,6 @@ public class MainActivity extends AppCompatActivity {
             mMainFragment = new MainFragmnet();
         }
         fragmentTransaction.add(R.id.frameLayout , mMainFragment, MAIN_FRAGMENT_TAG).commit();
-//        DaoMaster.DevOpenHelper devOpenHelper = new DaoMaster.DevOpenHelper(this, "foods", null);
-//        SQLiteDatabase db = devOpenHelper.getWritableDatabase();
-//        DaoMaster daoMaster = new DaoMaster(db);
-//        DaoSession daoSession = daoMaster.newSession();
-
-        /*QueryBuilder<Food> foodQueryBuilder = daoSession.getFoodDao().queryBuilder();
-        List<Food> list = foodQueryBuilder.list();
-        for (Food food : list){
-            FoodType foodType = food.getFoodType();
-            Log.e("CCCCCCC", "food : " + food.toString() + "  foodType : " + foodType);
-        }*/
     }
 
     @Override

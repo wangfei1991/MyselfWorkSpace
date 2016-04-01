@@ -17,7 +17,7 @@ public class GreenDaoExampleGenerator {
 
         Entity foodType = schema.addEntity("FoodType");
         foodType.addIdProperty().primaryKey().autoincrement();
-        foodType.addStringProperty("name").notNull();
+        foodType.addStringProperty("name").notNull().unique();
 
 //        Entity episode = schema.addEntity("episode");
 //        episode.addIdProperty().primaryKey();
