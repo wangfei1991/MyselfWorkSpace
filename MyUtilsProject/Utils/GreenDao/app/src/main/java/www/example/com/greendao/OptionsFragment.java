@@ -136,16 +136,21 @@ public class OptionsFragment extends Fragment {
 
     private static class OptionsCursorAdapter extends CursorAdapter{
 
+        public OptionsCursorAdapter(Context context, Cursor c) {
+            super(context, c);
+        }
+
         @Override
         public View newView(Context context, Cursor cursor, ViewGroup parent) {
             LayoutInflater inflater = LayoutInflater.from(context);
-            inflater.inflate()
-            return null;
+            View view = inflater.inflate(R.layout.list_item_layout, null);
+            return view;
         }
 
         @Override
         public void bindView(View view, Context context, Cursor cursor) {
-
+            TextView foodTypeId = (TextView) view.findViewById(R.id.foodTypeid);
+            TextView foodTypeName = (TextView) view.findViewById(R.id.foodTypeName);
         }
     }
     /*ew CursorAdapter() {
