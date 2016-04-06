@@ -5,19 +5,20 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.CursorAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import de.greenrobot.dao.AbstractDao;
 import de.greenrobot.dao.query.CursorQuery;
-import de.greenrobot.dao.query.QueryBuilder;
 import www.example.com.greendao.modle.DaoMaster;
 import www.example.com.greendao.modle.DaoSession;
 import www.example.com.greendao.modle.Food;
@@ -34,12 +35,20 @@ public class OptionsFragment extends Fragment {
 
     public static final byte ADD_OPTIONS = 1;
     public static final byte DELETE_OPTIONS = 2;
-    public static final byte UPDATE_OPTIONS = 3;
-    public static final byte QUERY_OPTIONS = 4;
+
+    private DaoSession mDaoSession;
+    private CursorAdapter mCursorAdapter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        //Thread to running
+        SQLiteOpenHelper devOpenHelper = DaoMaster.getSQLiteDatabaseInstance(getActivity());
+        SQLiteDatabase db = devOpenHelper.getWritableDatabase();
+        DaoMaster daoMaster = new DaoMaster(db);
+        mDaoSession = daoMaster.newSession();
+        mCursorAdapter = new OptionsCursorAdapter(getActivity(), null);
 
     }
 
@@ -63,12 +72,13 @@ public class OptionsFragment extends Fragment {
             case ADD_OPTIONS:
                 return R.layout.options_fragment_add;
             case DELETE_OPTIONS:
-                return R.layout.options_fragment_delete
+                return R.layout.options_fragment_delete;
             default:
                 return 0;
         }
     }
 
+    private FoodType mFoodType;
     private void addOptions(final View view, int options) {
         if (view != null) {
             switch (options) {
@@ -88,17 +98,53 @@ public class OptionsFragment extends Fragment {
                         public void onClick(View v) {
                             CharSequence foodName = ((TextView) view.findViewById(R.id.foodName)).getText();
                             if (!TextUtils.isEmpty(foodName)) {
-                                Food food = new Food(null, foodName.toString(), null);
+                                Food food = new Food(null, foodName.toString(), mFoodType != null ? mFoodType.getId() : null);
                                 insert(getActivity(), FoodDao.TABLENAME, food);
+                                mFoodType = null;
                             }
                         }
                     });
+                    ListView listView = (ListView) view.findViewById(R.id.foodSelectId);
+                    listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                        @Override
+                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                            mFoodType = (FoodType) view.getTag();
+                        }
+                    });
+                    listView.setAdapter(mCursorAdapter);
+                    new AsyncTask<Void, Void, Cursor>() {
+                        @Override
+                        protected Cursor doInBackground(Void... params) {
+                            Cursor cursor = query(getActivity(), FoodType.class);
+                            return cursor;
+                        }
+
+                        @Override
+                        protected void onPostExecute(Cursor cursor) {
+                            if (mCursorAdapter != null) {
+                                mCursorAdapter.changeCursor(cursor);
+                            }
+                        }
+                    }.execute();
                     break;
                 case DELETE_OPTIONS:
-                    Cursor cursor = query(getActivity(), FoodDao.class);
-                    CursorAdapter cursorAdapter =
-                    /*ListView delectListView = (ListView) view.findViewById(R.id.deleteListView);
-                    delectListView.setAdapter();*/
+                    ListView deleteListView = (ListView) view.findViewById(R.id.deleteListView);
+                    deleteListView.setAdapter(mCursorAdapter);
+                    new AsyncTask<Void, Void, Cursor>() {
+                        @Override
+                        protected Cursor doInBackground(Void... params) {
+                            Cursor cursor = query(getActivity(), FoodDao.class);
+                            return cursor;
+                        }
+
+                        @Override
+                        protected void onPostExecute(Cursor cursor) {
+                            if (mCursorAdapter != null) {
+                                mCursorAdapter.changeCursor(cursor);
+                            }
+                        }
+                    }.execute();
+
                     break;
             }
         }
@@ -111,11 +157,7 @@ public class OptionsFragment extends Fragment {
 
     @Nullable
     private void insert(Context context, String tableName, Object object) {
-        SQLiteOpenHelper devOpenHelper = DaoMaster.getSQLiteDatabaseInstance(context);
-        SQLiteDatabase db = devOpenHelper.getWritableDatabase();
-        DaoMaster daoMaster = new DaoMaster(db);
-        final DaoSession daoSession = daoMaster.newSession();
-        long insertCount = daoSession.insert(object);
+        long insertCount = mDaoSession.insert(object);
         if (insertCount > 0) {
             Toast.makeText(getActivity(), "Success", Toast.LENGTH_SHORT).show();
         } else {
@@ -124,12 +166,13 @@ public class OptionsFragment extends Fragment {
     }
 
     @Nullable
-    private Cursor query(Context context, Class dao) {
+    private Cursor query(Context context, Class entryClazz) {
         SQLiteOpenHelper devOpenHelper = DaoMaster.getSQLiteDatabaseInstance(context);
-        SQLiteDatabase db = devOpenHelper.getWritableDatabase();
+        SQLiteDatabase db = devOpenHelper.getReadableDatabase();
         DaoMaster daoMaster = new DaoMaster(db);
         DaoSession daoSession = daoMaster.newSession();
-        CursorQuery cursorQuery = daoSession.queryBuilder(dao).buildCursor();
+        CursorQuery cursorQuery = daoSession.queryBuilder(entryClazz).buildCursor();
+        cursorQuery.forCurrentThread();
         Cursor query = cursorQuery.query();
         return query;
     }
@@ -151,18 +194,10 @@ public class OptionsFragment extends Fragment {
         public void bindView(View view, Context context, Cursor cursor) {
             TextView foodTypeId = (TextView) view.findViewById(R.id.foodTypeid);
             TextView foodTypeName = (TextView) view.findViewById(R.id.foodTypeName);
+            FoodType foodType = FoodTypeDao.readEntity(cursor);
+            foodTypeId.setText(""+foodType.getId());
+            foodTypeName.setText(foodType.getName());
+            view.setTag(foodType);
         }
     }
-    /*ew CursorAdapter() {
-        @Override
-        public View newView(Context context, Cursor cursor, ViewGroup parent) {
-            return null;
-        }
-
-        @Override
-        public void bindView(View view, Context context, Cursor cursor) {
-
-        }
-    }*/
-
 }

@@ -64,7 +64,7 @@ public class FoodTypeDao extends AbstractDao<FoodType, Long> {
     @Override
     public Long readKey(Cursor cursor, int offset) {
         return cursor.isNull(offset + 0) ? null : cursor.getLong(offset + 0);
-    }    
+    }
 
     /** @inheritdoc */
     @Override
@@ -75,7 +75,14 @@ public class FoodTypeDao extends AbstractDao<FoodType, Long> {
         );
         return entity;
     }
-     
+
+    public static FoodType readEntity(Cursor cursor) {
+        FoodType entity = new FoodType(cursor.getLong(0), // id
+                cursor.getString(1) // name
+        );
+        return entity;
+    }
+
     /** @inheritdoc */
     @Override
     public void readEntity(Cursor cursor, FoodType entity, int offset) {
