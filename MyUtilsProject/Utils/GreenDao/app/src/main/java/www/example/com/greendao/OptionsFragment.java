@@ -13,10 +13,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.BaseAdapter;
 import android.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import de.greenrobot.dao.query.CursorQuery;
 import www.example.com.greendao.modle.DaoMaster;
@@ -34,10 +40,11 @@ public class OptionsFragment extends Fragment {
     public static final String OPTIONS_FLAY_STRING = "OPTIONS";
 
     public static final byte ADD_OPTIONS = 1;
-    public static final byte DELETE_OPTIONS = 2;
+    public static final byte QUERY_OPTIONS = 2;
 
     private DaoSession mDaoSession;
     private CursorAdapter mCursorAdapter;
+    private OptionsQueryAdpater mQueryAdapter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -49,10 +56,10 @@ public class OptionsFragment extends Fragment {
         DaoMaster daoMaster = new DaoMaster(db);
         mDaoSession = daoMaster.newSession();
         mCursorAdapter = new OptionsCursorAdapter(getActivity(), null);
+        mQueryAdapter = new OptionsQueryAdpater(getActivity());
 
     }
 
-    @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
@@ -71,7 +78,7 @@ public class OptionsFragment extends Fragment {
         switch (option) {
             case ADD_OPTIONS:
                 return R.layout.options_fragment_add;
-            case DELETE_OPTIONS:
+            case QUERY_OPTIONS:
                 return R.layout.options_fragment_delete;
             default:
                 return 0;
@@ -127,20 +134,20 @@ public class OptionsFragment extends Fragment {
                         }
                     }.execute();
                     break;
-                case DELETE_OPTIONS:
-                    ListView deleteListView = (ListView) view.findViewById(R.id.deleteListView);
-                    deleteListView.setAdapter(mCursorAdapter);
-                    new AsyncTask<Void, Void, Cursor>() {
+                case QUERY_OPTIONS:
+                    ListView queryListView = (ListView) view.findViewById(R.id.queryListView);
+                    queryListView.setAdapter(mQueryAdapter);
+                    new AsyncTask<Void, Void, List<Food>>() {
                         @Override
-                        protected Cursor doInBackground(Void... params) {
-                            Cursor cursor = query(getActivity(), FoodDao.class);
-                            return cursor;
+                        protected List<Food> doInBackground(Void... params) {
+                            List<Food> foods = query(getActivity());
+                            return foods;
                         }
 
                         @Override
-                        protected void onPostExecute(Cursor cursor) {
-                            if (mCursorAdapter != null) {
-                                mCursorAdapter.changeCursor(cursor);
+                        protected void onPostExecute(List<Food> foods) {
+                            if(mQueryAdapter != null) {
+                                mQueryAdapter.changeData(foods);
                             }
                         }
                     }.execute();
@@ -176,6 +183,63 @@ public class OptionsFragment extends Fragment {
         Cursor query = cursorQuery.query();
         return query;
     }
+
+    private List<Food> query(Context context) {
+        SQLiteOpenHelper devOpenHelper = DaoMaster.getSQLiteDatabaseInstance(context);
+        SQLiteDatabase db = devOpenHelper.getReadableDatabase();
+        DaoMaster daoMaster = new DaoMaster(db);
+        DaoSession daoSession = daoMaster.newSession();
+        FoodDao foodDao = daoSession.getFoodDao();
+        List<Food> foods = foodDao.loadAll();
+        return foods;
+    }
+
+    private static class OptionsQueryAdpater extends BaseAdapter{
+
+        private Context mContext;
+        public OptionsQueryAdpater(Context context){
+            this.mContext = context;
+        }
+        public List<Food> list = new ArrayList<Food>();
+        public void changeData( @NotNull List<Food> list){
+            this.list = list;
+            notifyDataSetChanged();
+        }
+        @Override
+        public int getCount() {
+            return list.size();
+        }
+
+        @Override
+        public Object getItem(int position) {
+            return null;
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return 0;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            View view = convertView;
+            if (convertView == null){
+                LayoutInflater inflater = LayoutInflater.from(mContext);
+                view = inflater.inflate(R.layout.list_item_query_item, null);
+            }
+            Food food = list.get(position);
+            TextView queryFoodId = (TextView) view.findViewById(R.id.queryFoodId);
+            queryFoodId.setText("foodId ： " + food.getId());
+
+            TextView queryFoodName = (TextView) view.findViewById(R.id.queryFoodName);
+            queryFoodName.setText("  foodName ： " + food.getName());
+
+            TextView queryFoodTypeName = (TextView) view.findViewById(R.id.queryFoodTypeName);
+            queryFoodTypeName.setText("  foodTypeName ： " + (food.getFoodType()==null ?  "NULL" : food.getFoodType().getName()));
+            return view;
+        }
+    }
+
 
     private static class OptionsCursorAdapter extends CursorAdapter{
 
