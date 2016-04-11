@@ -1,0 +1,2 @@
+简单仿写GreenDao的架构.
+仅支持Integer作为主键
